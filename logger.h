@@ -159,8 +159,6 @@ int logger_printf(logger_line_level_t level,
                   const char *format,
                   ... /* printf() like format & arguments */);
 
-extern logger_t logger; /* Global logger context */
-
 #define STON(v) ((v) *1000000000) /*  sec -> ns */
 #define timespec_to_ns(a) ((STON((a).tv_sec) + (a).tv_nsec))
 #define elapsed_ns(b, a) (timespec_to_ns(a) - timespec_to_ns(b))

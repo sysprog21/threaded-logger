@@ -31,9 +31,10 @@ static inline int _futex(atomic_int *uaddr,
 #define NTOM(v) ((v) / 1000000) /* ns -> ms */
 #define NTOU(v) ((v) / 1000)    /* ns -> sec */
 
-logger_t logger;
+/* Global logger context */
+static logger_t logger;
 
-static void *_thread_logger(void);
+static void *logger_thread_func(void);
 
 static _Thread_local logger_write_queue_t *_own_wrq = NULL;
 
@@ -98,7 +99,8 @@ int logger_init(int queues_max, int lines_max, logger_opts_t opts)
     _own_wrq = NULL;
 
     /* Reader thread */
-    pthread_create(&logger.reader_thread, NULL, (void *) _thread_logger, NULL);
+    pthread_create(&logger.reader_thread, NULL, (void *) logger_thread_func,
+                   NULL);
     pthread_setname_np(logger.reader_thread, "logger-reader");
     return 0;
 }
@@ -199,9 +201,9 @@ typedef struct {
     int max_lines;
     logger_opts_t opts;
     char thread_name[LOGGER_MAX_THREAD_NAME_SZ];
-} _thread_params;
+} thread_params_t;
 
-static void _logger_pthread_wrapper(_thread_params *params)
+static void thread_wrapper(thread_params_t *params)
 {
     pthread_cleanup_push((void *) free, (void *) params);
 
@@ -241,7 +243,7 @@ int logger_pthread_create(const char *thread_name,
                           void *(*start_routine)(void *),
                           void *arg)
 {
-    _thread_params *params = malloc(sizeof(_thread_params));
+    thread_params_t *params = malloc(sizeof(thread_params_t));
     if (!params)
         return -1;
 
@@ -252,7 +254,7 @@ int logger_pthread_create(const char *thread_name,
     params->start_routine = start_routine;
     params->arg = arg;
 
-    return pthread_create(thread, attr, (void *) _logger_pthread_wrapper,
+    return pthread_create(thread, attr, (void *) thread_wrapper,
                           (void *) params);
 }
 
@@ -315,15 +317,15 @@ reindex:
 
 static const char *const _logger_level_label[LOGGER_LEVEL_COUNT] = {
     [LOGGER_LEVEL_ALERT] = "ALERT",  [LOGGER_LEVEL_CRITICAL] = "CRIT ",
-    [LOGGER_LEVEL_ERROR] = "ERROR",  [LOGGER_LEVEL_WARNING] = "WARN!",
-    [LOGGER_LEVEL_NOTICE] = "NOTCE", [LOGGER_LEVEL_INFO] = "INFO ",
+    [LOGGER_LEVEL_ERROR] = "ERROR",  [LOGGER_LEVEL_WARNING] = "WARN",
+    [LOGGER_LEVEL_NOTICE] = "NOTCE", [LOGGER_LEVEL_INFO] = "INFO",
     [LOGGER_LEVEL_DEBUG] = "DEBUG",
 };
 
 typedef struct {
     unsigned long ts;          /* Key to sort on (ts of current line) */
     logger_write_queue_t *wrq; /* Related write queue */
-} _logger_fuse_entry_t;
+} fuse_entry_t;
 
 static const char *get_date(unsigned long sec, const logger_line_colors_t *c)
 {
@@ -390,15 +392,14 @@ static int write_line(const logger_write_queue_t *wrq, const logger_line_t *l)
                   c->reset, LOGGER_MAX_SOURCE_LEN, start_of_src_str,
                   c->thread_name, biggest_thread_name, wrq->thread_name,
                   c->reset, l->str);
-    /* Print */
     return write(1, linestr, len);
 }
 
-static inline void _bubble_fuse_up(_logger_fuse_entry_t *fuse, int fuse_nr)
+static inline void bubble_fuse_up(fuse_entry_t *fuse, int fuse_nr)
 {
     if (fuse_nr > 1 && fuse[0].ts > fuse[1].ts) {
         /* Strictly bigger move up (stack empty ones at the end of smallers) */
-        _logger_fuse_entry_t newentry = fuse[0];
+        fuse_entry_t newentry = fuse[0];
         int i = 0;
         do {
             fuse[i] = fuse[i + 1];
@@ -408,12 +409,12 @@ static inline void _bubble_fuse_up(_logger_fuse_entry_t *fuse, int fuse_nr)
     }
 }
 
-static inline void _bubble_fuse_down(_logger_fuse_entry_t *fuse, int fuse_nr)
+static inline void bubble_fuse_down(fuse_entry_t *fuse, int fuse_nr)
 {
     if (fuse_nr > 1 && fuse[fuse_nr - 1].ts <= fuse[fuse_nr - 2].ts) {
         int i = fuse_nr - 1;
         /* smaller-n-same move down (so, stack empty ones at top of smallers) */
-        _logger_fuse_entry_t newentry = fuse[i];
+        fuse_entry_t newentry = fuse[i];
         do {
             fuse[i] = fuse[i - 1];
             i--;
@@ -423,7 +424,7 @@ static inline void _bubble_fuse_down(_logger_fuse_entry_t *fuse, int fuse_nr)
 }
 
 static inline int set_queue_entry(const logger_write_queue_t *wrq,
-                                  _logger_fuse_entry_t *fuse)
+                                  fuse_entry_t *fuse)
 {
     unsigned int index = wrq->rd_idx;
     if (!wrq->lines[index].ready) {
@@ -436,9 +437,7 @@ static inline int set_queue_entry(const logger_write_queue_t *wrq,
     return 0;
 }
 
-static int enqueue_next_lines(_logger_fuse_entry_t *fuse,
-                              int fuse_nr,
-                              int empty_nr)
+static int enqueue_next_lines(fuse_entry_t *fuse, int fuse_nr, int empty_nr)
 {
     logger_write_queue_t *wrq;
 
@@ -452,22 +451,22 @@ static int enqueue_next_lines(_logger_fuse_entry_t *fuse,
         /* Enqueue the next line */
         empty_nr += set_queue_entry(wrq, &fuse[0]);
 
-        _bubble_fuse_up(fuse, fuse_nr); /* Let it find its place */
+        bubble_fuse_up(fuse, fuse_nr); /* Find its place */
     }
 
     /* Let see if there is something new in the empty queues. */
     int rv = 0;
     for (int i = 0, last = fuse_nr - 1; i < empty_nr; i++) {
         rv += set_queue_entry(fuse[last].wrq, &fuse[last]);
-        _bubble_fuse_down(fuse, fuse_nr);
+        bubble_fuse_down(fuse, fuse_nr);
     }
     /* return the number of remaining empty queues */
     return rv;
 }
 
-static inline int init_lines_queue(_logger_fuse_entry_t *fuse, int fuse_nr)
+static inline int init_lines_queue(fuse_entry_t *fuse, int fuse_nr)
 {
-    memset(fuse, 0, fuse_nr * sizeof(_logger_fuse_entry_t));
+    memset(fuse, 0, fuse_nr * sizeof(fuse_entry_t));
 
     for (int i = 0; i < fuse_nr; i++) {
         fuse[i].ts = ~0; /* Init all the queues as if they were empty */
@@ -476,7 +475,7 @@ static inline int init_lines_queue(_logger_fuse_entry_t *fuse, int fuse_nr)
     return fuse_nr; /* Number of empty queues (all) */
 }
 
-static void *_thread_logger(void)
+static void *logger_thread_func(void)
 {
     bool running = logger.running;
     fprintf(stderr, "<logger-thd-read> Starting...\n");
@@ -501,12 +500,12 @@ static void *_thread_logger(void)
             atomic_store(&logger.reload, 0);
             continue;
         }
-        _logger_fuse_entry_t fuse_queue[fuse_nr];
+        fuse_entry_t fuse_queue[fuse_nr];
 
         fprintf(stderr,
-                "<logger-thd-read> (Re)Loading... _logger_fuse_entry_t = %d x "
+                "<logger-thd-read> (Re)Loading... fuse_entry_t = %d x "
                 "%lu bytes (%lu bytes total)\n",
-                fuse_nr, sizeof(_logger_fuse_entry_t), sizeof(fuse_queue));
+                fuse_nr, sizeof(fuse_entry_t), sizeof(fuse_queue));
 
         empty_nr = init_lines_queue(fuse_queue, fuse_nr);
 

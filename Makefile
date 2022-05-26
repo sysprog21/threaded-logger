@@ -8,7 +8,8 @@ all: $(EXEC)
 .PHONY: check clean
 
 CC ?= gcc
-CFLAGS = -Wall -std=gnu11 -g -O2 -I.
+CFLAGS = -Wall -std=gnu11 -g -O2
+CFLAGS += -I. -D_GNU_SOURCE
 LDFLAGS = -lpthread
 
 OBJS := \
