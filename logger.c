@@ -115,12 +115,6 @@ void logger_deinit(void)
 
     pthread_join(logger.reader_thread, NULL);
 
-    int total = 0;
-    for (int i = 0; i < logger.queues_nr; i++) {
-        total += sizeof(logger_write_queue_t) +
-                 logger.queues[i]->lines_nr * sizeof(logger_line_t);
-    }
-
     for (int i = 0; i < logger.queues_nr; i++) {
         free(logger.queues[i]->lines);
         free(logger.queues[i]);

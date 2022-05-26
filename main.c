@@ -86,8 +86,8 @@ int main(int argc, char **argv)
             "max_lines/thr[%lu] (1/%d chances to wait %d us) %s%s\n",
             thp.thread_max, thp.lines_min, thp.lines_max, thp.lines_total,
             thp.print_max, thp.chances, thp.uwait,
-            thp.opts & LOGGER_OPT_NONBLOCK ? "non-blocking" : "",
-            thp.opts & LOGGER_OPT_PRINTLOST ? "+printlost" : "");
+            (thp.opts & LOGGER_OPT_NONBLOCK) ? "non-blocking" : "",
+            (thp.opts & LOGGER_OPT_PRINTLOST) ? "+printlost" : "");
     fprintf(
         stderr,
         "Waiting for %d seconds after the logger-reader thread is started\n\n",
