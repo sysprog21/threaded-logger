@@ -47,10 +47,12 @@ typedef enum {
 typedef enum {
     LOGGER_OPT_NONE = 0,     /* No options. Use default values ! */
     LOGGER_OPT_NONBLOCK = 1, /* return -1 and EAGAIN when the queue is full */
-    LOGGER_OPT_PRINTLOST =
-        2, /* Print lost lines soon as there is some free space again */
-    LOGGER_OPT_PREALLOC = 4, /* Force the kernel to really allocate the bloc (to
-                                bypass the copy-on-write mechanism) */
+    /* Print lost lines soon as there is some free space again */
+    LOGGER_OPT_PRINTLOST = 2,
+    /* Force the kernel to really allocate the bloc (to bypass copy-on-write
+     * mechanism)
+     */
+    LOGGER_OPT_PREALLOC = 4,
 } logger_opts_t;
 
 /* Definition of a log line */
@@ -108,13 +110,18 @@ typedef struct {
     const logger_line_colors_t *theme; /* Color theme to use */
 } logger_t;
 
-/* Initialize the logger manager */
-int logger_init(int queues_max, /* Hard limit of queues that can be allocated */
-                int lines_max_def,      /* Recommanded log lines to allocate by
-                                           default */
-                logger_opts_t options); /* See options above. */
+/**
+ * Initialize the logger manager.
+ * @queues_max Hard limit of queues that can be allocated
+ * @lines_max_def Recommanded log lines to allocate by default
+ * @options See options above
+ */
+int logger_init(int queues_max, int lines_max_def, logger_opts_t options);
 
-void logger_deinit(void); /* Empty the queues and free all the ressources */
+/**
+ * Empty the queues and free all the ressources.
+ */
+void logger_deinit(void);
 
 /**
  * Assign a queue to the calling thread.
