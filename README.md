@@ -2,15 +2,12 @@
 
 ## Features
 
-* Let the writer threads as free as possible (no mutexes, limited atomics)
+* Lockless implementation of multi-threaded logging
 * Send output lines per lines in an atomic manner (human monitoring)
 * The reader thread consume as less ressources as possible
 * Limit the amount of memory consumed by reusing queues
 * Memory allocated one time for all at thread creation time
-* Easy `pthread_create` wrapper to handle internal house keeping transparently
-* Easy to remove all the logging (or some levels) by changing defines
-* Easy to switch between the classical full text or ansi colors
-* Log levels are compatible with syslog
+* Able to remove all the logging (or some levels) by changing defines
 
 ## Design
 
@@ -19,13 +16,13 @@
                +---------------+   |   -------       +----------+
                       ^ |          |   _______       +----------+
                       | v          -- | lines | <--- | thread 2 |
-                 ____________      |   -------       +----------+
-                | line thr 2 |     |   _______       +----------+
-                 ------------      -- | lines | <--- | thread n |
-                | line thr 1 |         -------       +----------+
-                 ------------
-                | line thr n |
-                 ------------
+               _______________     |   -------       +----------+
+              | line thread 1 |    |   _______       +----------+
+               ---------------     -- | lines | <--- | thread n |
+              | line thread 2 |        -------       +----------+
+               ---------------
+              | line thread n |
+               ---------------
 
 Each threads have its own queue allocated when it is forked, with a fine
 tunable number of lines, used to buffer the lines to output.  The logger
@@ -43,11 +40,6 @@ thread to wait (or loose the line if non-blocking mode is enabled).
 
 The queue can also be allowed to loose lines, avoiding the thread to block
 until some space are freeed.
-
-For convenience / easy tracing, another option is there to log the number of
-lost lines soon as some more space is free.  This allows you to know the
-queue was too small at a certain point in time and maybe fine tune the
-buffer size for that thread or debug why this is happening at these times.
 
 As stated, the main goal of this logger is to minimize as much as possible
 the time spent by the threads to log something on the terminal or on slow
