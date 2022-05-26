@@ -92,7 +92,6 @@ int logger_init(int queues_max, int lines_max, logger_opts_t opts)
     logger.queues = calloc(queues_max, sizeof(logger_write_queue_t *));
     logger.queues_max = queues_max;
     logger.opts = opts;
-    logger.theme = &logger_colors_default;
     logger.default_lines_nr = lines_max;
     logger.running = true;
 
@@ -366,10 +365,13 @@ static const char *get_time(unsigned long sec, const logger_line_colors_t *c)
     return time;
 }
 
+/* Default theme */
+extern const logger_line_colors_t logger_colors_default;
+
 static int write_line(const logger_write_queue_t *wrq, const logger_line_t *l)
 {
     char linestr[LOGGER_LINE_SZ + LOGGER_MAX_PREFIX_SZ];
-    const logger_line_colors_t *c = logger.theme;
+    const logger_line_colors_t *c = &logger_colors_default;
 
     /* File/Function/Line */
     char src_str[128], *start_of_src_str = src_str;

@@ -107,7 +107,6 @@ typedef struct {
     atomic_int waiting;   /* True (1) if the reader-thread is sleeping ... */
     pthread_t reader_thread;   /* TID of the reader thread */
     pthread_mutex_t queues_mx; /* Needed when extending the **queues array... */
-    const logger_line_colors_t *theme; /* Color theme to use */
 } logger_t;
 
 /**
@@ -161,9 +160,6 @@ int logger_printf(logger_line_level_t level,
                   ... /* printf() like format & arguments */);
 
 extern logger_t logger; /* Global logger context */
-
-/* Default theme */
-extern const logger_line_colors_t logger_colors_default;
 
 #define STON(v) ((v) *1000000000) /*  sec -> ns */
 #define timespec_to_ns(a) ((STON((a).tv_sec) + (a).tv_nsec))
