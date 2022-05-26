@@ -303,11 +303,6 @@ reindex:
         int lost = _own_wrq->lost;
         _own_wrq->lost_total += lost;
         _own_wrq->lost = 0;
-
-        logger_printf(LOGGER_LEVEL_TRACE, __FILE__, __FUNCTION__, __LINE__,
-                      "Lost %d log line(s) (%d so far) !", lost,
-                      _own_wrq->lost_total);
-
         goto reindex;
     }
     va_start(ap, format);
@@ -329,7 +324,7 @@ static const char *const _logger_level_label[LOGGER_LEVEL_COUNT] = {
     [LOGGER_LEVEL_ALERT] = "ALERT",  [LOGGER_LEVEL_CRITICAL] = "CRIT ",
     [LOGGER_LEVEL_ERROR] = "ERROR",  [LOGGER_LEVEL_WARNING] = "WARN!",
     [LOGGER_LEVEL_NOTICE] = "NOTCE", [LOGGER_LEVEL_INFO] = "INFO ",
-    [LOGGER_LEVEL_DEBUG] = "DEBUG",  [LOGGER_LEVEL_TRACE] = "TRACE",
+    [LOGGER_LEVEL_DEBUG] = "DEBUG",
 };
 
 typedef struct {

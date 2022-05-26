@@ -22,21 +22,19 @@
  */
 typedef enum {
     /* Alert: Process can not continue working. Manual action must be done. */
-    LOGGER_LEVEL_ALERT = 1,
+    LOGGER_LEVEL_ALERT = 0,
     /* Crit: Process was entered in an unknown state.  */
-    LOGGER_LEVEL_CRITICAL = 2,
+    LOGGER_LEVEL_CRITICAL,
     /* Error: Error is returned from function, etc. */
-    LOGGER_LEVEL_ERROR = 3,
+    LOGGER_LEVEL_ERROR,
     /* Warning: Message have to be checked further */
-    LOGGER_LEVEL_WARNING = 4,
+    LOGGER_LEVEL_WARNING,
     /* Notice: Message could be important/interresting to know. */
-    LOGGER_LEVEL_NOTICE = 5,
+    LOGGER_LEVEL_NOTICE,
     /* Info: Message is symply informational */
-    LOGGER_LEVEL_INFO = 6,
+    LOGGER_LEVEL_INFO,
     /* Debug: Message is for debugging informations only. */
-    LOGGER_LEVEL_DEBUG = 7,
-    /* Trace: Trace lines. To easily filter out hudge amount of lines */
-    LOGGER_LEVEL_TRACE,
+    LOGGER_LEVEL_DEBUG,
 
     /* Internal use */
     LOGGER_LEVEL_COUNT,                         /* Number of levels */
@@ -186,7 +184,4 @@ extern const logger_line_colors_t logger_colors_default;
                   ##__VA_ARGS__)
 #define LOG_DEBUG(fmt, ...)                                                  \
     logger_printf(LOGGER_LEVEL_DEBUG, __FILE__, __FUNCTION__, __LINE__, fmt, \
-                  ##__VA_ARGS__)
-#define LOG_TRACE(fmt, ...)                                                  \
-    logger_printf(LOGGER_LEVEL_TRACE, __FILE__, __FUNCTION__, __LINE__, fmt, \
                   ##__VA_ARGS__)

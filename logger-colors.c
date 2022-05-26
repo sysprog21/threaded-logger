@@ -13,7 +13,6 @@ const logger_line_colors_t logger_colors_default = {
             [LOGGER_LEVEL_NOTICE] = C_DW,
             [LOGGER_LEVEL_INFO] = C_DB,
             [LOGGER_LEVEL_DEBUG] = C_DM,
-            [LOGGER_LEVEL_TRACE] = C_DC,
         },
     .reset = C_RST,
     .time = "",
