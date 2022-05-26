@@ -14,10 +14,10 @@ typedef struct {
     int uwait;
     int chances;
     int opts;
-} _thread_params;
+} thread_params_t;
 
-/* Test thread */
-static void *thread_func_write(const _thread_params *thp)
+/* Tester thread */
+static void *writer(const thread_params_t *thp)
 {
     char th[LOGGER_MAX_THREAD_NAME_SZ];
 
@@ -25,7 +25,7 @@ static void *thread_func_write(const _thread_params *thp)
 
     for (int seq = 0; seq < thp->print_max; seq++) {
         if (!(rand() % thp->chances)) {
-            fprintf(stderr, "<%s> Bad luck, waiting for %d usec\n", th,
+            fprintf(stderr, "<%s> Bad luck, waiting for %d us\n", th,
                     thp->uwait);
             usleep(thp->uwait);
         }
@@ -59,7 +59,8 @@ int main(int argc, char **argv)
             argv[0]);
         return 1;
     }
-    _thread_params thp = {
+
+    thread_params_t thp = {
         .thread_max = atoi(argv[1]),
         .lines_min = atoi(argv[2]),
         .lines_max = atoi(argv[3]),
@@ -114,7 +115,7 @@ int main(int argc, char **argv)
 
         snprintf(tnm[i], LOGGER_MAX_THREAD_NAME_SZ, "writer-thd-%04d", i);
         logger_pthread_create(tnm[i], queue_size, thp.opts, &tid[i], NULL,
-                              (void *) thread_func_write, (void *) &thp);
+                              (void *) writer, (void *) &thp);
 
         printed_lines += thp.print_max;
     }
@@ -129,7 +130,7 @@ int main(int argc, char **argv)
                 int queue_size = thp.lines_min +
                                  rand() % (thp.lines_max - thp.lines_min + 1);
                 logger_pthread_create(tnm[i], queue_size, LOGGER_OPT_NONE,
-                                      &tid[i], NULL, (void *) thread_func_write,
+                                      &tid[i], NULL, (void *) writer,
                                       (void *) &thp);
                 printed_lines += thp.print_max;
                 fprintf(stderr, "Restarting thread %02d ...\n", i);
