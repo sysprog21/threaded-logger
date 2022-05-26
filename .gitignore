@@ -1,4 +1,4 @@
 *.o
 *.o.d
 out.log
-logger
+build/*

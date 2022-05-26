@@ -1,11 +1,43 @@
-CFLAGS := -Wall -O2 -g -std=c11
-CC ?= gcc
+OUT ?= build
 
-logger: logger.h logger.c main.c logger-colors.c
-	$(CC) $(CFLAGS) -D_GNU_SOURCE -o logger logger.c main.c logger-colors.c -lpthread
+EXEC := logger
+EXEC := $(addprefix $(OUT)/,$(EXEC))
+
+all: $(EXEC)
+
+.PHONY: check clean
+
+CC ?= gcc
+CFLAGS = -Wall -std=gnu11 -g -O2 -I.
+LDFLAGS = -lpthread
+
+OBJS := \
+	logger.o \
+	logger-colors.o \
+	main.o
+
+deps := $(OBJS:%.o=%.o.d)
+OBJS := $(addprefix $(OUT)/,$(OBJS))
+deps := $(addprefix $(OUT)/,$(deps))
+
+$(OUT)/%.o: %.c
+	$(CC) $(CFLAGS) -c -o $@ -MMD -MF $@.d $<
+
+$(OUT)/logger: $(OBJS)
+	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
+
+$(OBJS): | $(OUT)
+
+$(OUT):
+	mkdir -p $@
+
+.PRECIOUS: %.o
+
+check: $(EXEC)
+	@scripts/test.sh
 
 clean:
-	rm -f logger out*.log
+	$(RM) $(EXEC) $(OBJS) $(deps)
+	@rm -rf $(OUT)
 
-check: logger
-	./test.sh
+-include $(deps)

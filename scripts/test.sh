@@ -5,5 +5,5 @@ default=( 5        50     200    100000  1000      100       10           0     
 
 [ $# -gt 0 ] && params=(${*}) || params=(${default[*]})
 
-/usr/bin/time -v ./logger ${params[*]} > out.log 2>&1 &
-less -RS +F < out.log
+/usr/bin/time -v build/logger ${params[*]} > build/out.log 2>&1 &
+less -RS +F < build/out.log
