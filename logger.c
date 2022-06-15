@@ -34,7 +34,7 @@ static inline int _futex(atomic_int *uaddr,
 /* Global logger context */
 static logger_t logger;
 
-static void *logger_thread_func(void);
+static void *logger_reader_func(void);
 
 static _Thread_local logger_write_queue_t *_own_wrq = NULL;
 
@@ -84,7 +84,7 @@ static logger_write_queue_t *alloc_write_queue(int lines_max,
     return wrq;
 }
 
-int logger_init(int queues_max, int lines_max, logger_opts_t opts)
+int logger_reader_create(int queues_max, int lines_max, logger_opts_t opts)
 {
     memset(&logger, 0, sizeof(logger_t));
 
@@ -99,7 +99,7 @@ int logger_init(int queues_max, int lines_max, logger_opts_t opts)
     _own_wrq = NULL;
 
     /* Reader thread */
-    pthread_create(&logger.reader_thread, NULL, (void *) logger_thread_func,
+    pthread_create(&logger.reader_thread, NULL, (void *) logger_reader_func,
                    NULL);
     pthread_setname_np(logger.reader_thread, "logger-reader");
     return 0;
@@ -235,7 +235,7 @@ static void thread_wrapper(thread_params_t *params)
     pthread_cleanup_pop(true);
 }
 
-int logger_pthread_create(const char *thread_name,
+int logger_writer_create(const char *thread_name,
                           unsigned int max_lines,
                           logger_opts_t opts,
                           pthread_t *thread,
@@ -475,7 +475,7 @@ static inline int init_lines_queue(fuse_entry_t *fuse, int fuse_nr)
     return fuse_nr; /* Number of empty queues (all) */
 }
 
-static void *logger_thread_func(void)
+static void *logger_reader_func(void)
 {
     bool running = logger.running;
     fprintf(stderr, "<logger-thd-read> Starting...\n");
