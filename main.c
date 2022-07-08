@@ -101,7 +101,7 @@ int main(int argc, char **argv)
     clock_gettime(CLOCK_MONOTONIC, &after);
     fprintf(stderr, "%lu ns\n\n", elapsed_ns(before, after));
 
-    logger_reader_create(thp.thread_max * 1.5, 50, 0);
+    logger_init(thp.thread_max * 1.5, 50, 0);
     sleep(start_wait);
 
     /* Writer threads */
@@ -114,7 +114,7 @@ int main(int argc, char **argv)
             thp.lines_min + rand() % (thp.lines_max - thp.lines_min + 1);
 
         snprintf(tnm[i], LOGGER_MAX_THREAD_NAME_SZ, "writer-thd-%04d", i);
-        logger_writer_create(tnm[i], queue_size, thp.opts, &tid[i], NULL,
+        logger_pthread_create(tnm[i], queue_size, thp.opts, &tid[i], NULL,
                               (void *) writer, (void *) &thp);
 
         printed_lines += thp.print_max;
@@ -129,7 +129,7 @@ int main(int argc, char **argv)
                 /* Not the right amount... Restart the exited thread */
                 int queue_size = thp.lines_min +
                                  rand() % (thp.lines_max - thp.lines_min + 1);
-                logger_writer_create(tnm[i], queue_size, LOGGER_OPT_NONE,
+                logger_pthread_create(tnm[i], queue_size, LOGGER_OPT_NONE,
                                       &tid[i], NULL, (void *) writer,
                                       (void *) &thp);
                 printed_lines += thp.print_max;

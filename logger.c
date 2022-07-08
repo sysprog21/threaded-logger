@@ -84,7 +84,7 @@ static logger_write_queue_t *alloc_write_queue(int lines_max,
     return wrq;
 }
 
-int logger_reader_create(int queues_max, int lines_max, logger_opts_t opts)
+int logger_init(int queues_max, int lines_max, logger_opts_t opts)
 {
     memset(&logger, 0, sizeof(logger_t));
 
@@ -235,7 +235,7 @@ static void thread_wrapper(thread_params_t *params)
     pthread_cleanup_pop(true);
 }
 
-int logger_writer_create(const char *thread_name,
+int logger_pthread_create(const char *thread_name,
                           unsigned int max_lines,
                           logger_opts_t opts,
                           pthread_t *thread,

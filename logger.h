@@ -115,7 +115,7 @@ typedef struct {
  * @lines_max_def Recommanded log lines to allocate by default
  * @options See options above
  */
-int logger_reader_create(int queues_max, int lines_max_def, logger_opts_t options);
+int logger_init(int queues_max, int lines_max_def, logger_opts_t options);
 
 /**
  * Empty the queues and free all the ressources.
@@ -139,7 +139,7 @@ int logger_free_write_queue(void);
  * @opts Options to used for this queue. (=0 use default)
  * @thread See pthread_create(3) for these args
  */
-int logger_writer_create(const char *thread_name,
+int logger_pthread_create(const char *thread_name,
                           unsigned int max_lines,
                           logger_opts_t opts,
                           pthread_t *thread,
