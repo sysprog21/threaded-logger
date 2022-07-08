@@ -34,7 +34,7 @@ static inline int _futex(atomic_int *uaddr,
 /* Global logger context */
 static logger_t logger;
 
-static void *logger_thread_func(void);
+static void *logger_reader_func(void);
 
 static _Thread_local logger_write_queue_t *_own_wrq = NULL;
 
@@ -99,7 +99,7 @@ int logger_init(int queues_max, int lines_max, logger_opts_t opts)
     _own_wrq = NULL;
 
     /* Reader thread */
-    pthread_create(&logger.reader_thread, NULL, (void *) logger_thread_func,
+    pthread_create(&logger.reader_thread, NULL, (void *) logger_reader_func,
                    NULL);
     pthread_setname_np(logger.reader_thread, "logger-reader");
     return 0;
@@ -475,7 +475,7 @@ static inline int init_lines_queue(fuse_entry_t *fuse, int fuse_nr)
     return fuse_nr; /* Number of empty queues (all) */
 }
 
-static void *logger_thread_func(void)
+static void *logger_reader_func(void)
 {
     bool running = logger.running;
     fprintf(stderr, "<logger-thd-read> Starting...\n");
